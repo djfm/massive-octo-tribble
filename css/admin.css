@@ -1,0 +1,37 @@
+.light-error
+{
+	color: orange;
+	font-weight: bold;
+}
+
+fieldset.optgroup
+{
+	margin-top: 10px;
+	background-color: #FFF;
+}
+
+fieldset.optgroup label
+{
+	width: auto;
+}
+
+div.group-product, div.products-found > div
+{
+	margin-top: 5px;
+}
+
+div.group-product > button, div.products-found > div > button
+{
+	margin-right: 5px;
+	padding: 2px;
+	width: 80px;
+}
+
+span.product-result, div.group-product span
+{
+	background-color: aliceblue;
+	padding: 3px;
+	border: 1px solid #ccc;
+	width: 600px;
+	display:inline-block;
+}
