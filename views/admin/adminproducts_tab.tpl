@@ -1,22 +1,11 @@
+<script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.2.2/angular.min.js"></script>
+<style>
+	{$custompacks_css}
+</style>
+
 <script>
 	var is_custom_pack = {$is_custom_pack};
 	var admin_url = {$custompacks_admin_url};
-
-	function updateCustomPack()
-	{
-		if (is_custom_pack)
-		{
-			$('#custom_pack').click();
-			$('#custom_pack_configuration').show();
-			$('#not_a_custom_pack').hide();
-			updateComponents();
-		}
-		else
-		{
-			$('#custom_pack_configuration').hide();
-			$('#not_a_custom_pack').show();
-		}
-	};
 
 	$(document).ready(function(){
 		function setIsCustomPack(boolValue, cb)
@@ -30,8 +19,6 @@
 		/* Add a new product type to the UI in the "Information" tab */
 		$('#simple_product').next().after($('<input type="radio" name="type_product" id="custom_pack" value="0"><label class="radioCheck" for="custom_pack">{l s='Custom Pack' mod='custompacks' js=1}</label>'));
 
-		updateCustomPack();
-
 		/* Handle the change of product type */
 		$('input:radio[name=type_product]').click(function(){
 			if ($(this).attr('id') === 'custom_pack')
@@ -42,7 +29,6 @@
 						if(resp === 'true')
 						{
 							is_custom_pack = true;
-							updateCustomPack();
 						}
 					});
 				}
@@ -55,181 +41,163 @@
 						if(resp === 'true')
 						{
 							is_custom_pack = false;
-							updateCustomPack();
 						}
 					});
 				}
 			}
 		});
+
+		if(is_custom_pack)
+		{
+			$('#custom_pack').attr('checked', 'checked');
+		}
 	});
 
-	function showOptGroupForm()
+	var CustomPacks = function ($scope, $http)
 	{
-		$('#new_optgroup_button').hide();
-		$('#new_optgroup_form').show(); 
-		event.preventDefault();
-		return false;
-	};
+		$scope.components = {};
+		// Models for the product search boxes queries
+		$scope.queries	  = {};
+		// Results of searches
+		$scope.results    = {};
 
-	function addOptGroup()
-	{
-		var name = $('#new_optgroup_name').val();
+		$scope.opttypes = {
+			unique: 'Unique',
+			multiple: 'Multiple'
+		};
 
-		if(name != '')
+		$scope.updateComponents = function()
+		{	
+			$http
+			.get(admin_url+"&ajax-action=getComponents&id_product="+id_product)
+			.then(function(resp){
+				if (resp.data.success)
+					$scope.components = resp.data.components;
+			});
+		};
+
+		$scope.searchProducts = function(query, section)
 		{
-			$.post(admin_url+"&ajax-action=addOptGroup", {
-					id_product: id_product, 
-					name: name
-				}, 
-				function(resp){
-					resp = JSON.parse(resp);
-					if(resp.success)
-					{
-						$('#new_optgroup_button').show();
-						$('#new_optgroup_form').hide(); 
-						$('#new_optgroup_error').html('');
-						updateComponents();
-					}
-					else
-					{
-						$('#new_optgroup_error').html(resp.message);
-					}
-				});
-		}
-		else
+			$http
+			.get(admin_url+'&ajax-action=findProducts&query='+query)
+			.then(function(resp){
+				$scope.results[section] = resp.data;
+			});
+		};
+
+		$scope.addProduct = function(id_product_to_add, section)
 		{
-			$('#new_optgroup_error').html('{l s='Please name your group of options.' mod='custompacks' js=1}');
-		}
-
-		event.preventDefault();
-		return false;
-	};
-
-	function updateComponents()
-	{	
-		$.get(admin_url+"&ajax-action=getComponents", {
-				id_product: id_product
-			},
-			function(resp){
-				resp = JSON.parse(resp);
-				if(resp.success)
-				{
-					$('#components').html('');
-					for(var c in resp.components)
-					{
-						$('#components').append(optGroupView(resp.components[c]));
-					}
-				}
-			}
-		);
-	};
-
-	function optGroupView(group)
-	{
-		var f = $('<fieldset data-optgroup="'+group.optgroup+'" class="optgroup">');
-		f.append('<legend>'+group.optgroup+'</legend>');
-		f.append(
-			$('<div>')
-			.append('<label>{l s='Search products'}</label><input type="text" onkeyup="findProducts(this)"></input>')
-			.append($('<div class="products-found"></div>'))
-			.append('<p class="light-error"></p>')
-		);
-
-		var products = $('<div class="group-products">');
-
-		for(var i in group.products)
-		{
-			var div = $('<div class="group-product">');
-			var button = $('<button>{l s='Remove' mod='custompacks' js=1}</button>');
-			button.click((function(i){ return function(){
-				$.post(admin_url+'&ajax-action=removeProduct', {
-					id_product: id_product,
-					optgroup: group.optgroup,
-					id_product_to_remove: i
-				}, function(resp){
-					resp = JSON.parse(resp);
-					updateComponents();
-				});
-				event.preventDefault();
-				return false;
-			}})(i));
-			div.append(button);
-			div.append("<span>"+group.products[i].name+"</span>");
-			products.append(div);
-		}
-
-		f.append(products);
-
-		return f;
-	};
-
-	function findProducts(e)
-	{
-		$.get(admin_url+'&ajax-action=findProducts', {
-			query: $(e).val()
-		}, function(resp){
-			resp = JSON.parse(resp);
-			var list = $(e).closest('fieldset.optgroup').find('div.products-found');
-			list.html('');
-			for(var i in resp)
-			{
-				list.append(productResultView(resp[i]));
-			}
-		});
-	};
-
-	function productResultView(data)
-	{
-		var div = $('<div>');
-		var button = $('<button>{l s='Add' mod='custompacks'}</button>');
-		button.click(function(){
-			var fieldset = button.closest('fieldset.optgroup');
-			var optgroup = fieldset.attr('data-optgroup');
-			$.post(admin_url+"&ajax-action=addProduct", {
-				optgroup: optgroup,
+			$http
+			.post(admin_url+"&ajax-action=addProduct", {
+				optgroup: section,
 				id_product: id_product,
-				id_product_to_add: data.id_product
-			}, function(resp){
-				resp = JSON.parse(resp);
-				if(resp === true)
+				id_product_to_add: id_product_to_add
+			})
+			.then(function(resp){
+				if(resp.data === 'true')
 				{
-					updateComponents();
+					$scope.updateComponents();
 				}
 				else
 				{
-					fieldset.find('.light-error').html(resp);
+					console.log(resp.data)
 				}
 			});
-			event.preventDefault();
-			return false;
-		});
-		div.append(button);
-		div.append($('<span class="product-result">').html(data.name));
-		return div;
-	};
+		};
 
+		$scope.removeProduct = function(id_product_to_remove, section)
+		{
+			$http
+			.post(admin_url+'&ajax-action=removeProduct', {
+				id_product: id_product,
+				optgroup: section,
+				id_product_to_remove: id_product_to_remove
+			})
+			.then(function(resp){
+				$scope.updateComponents();
+			});
+		};
+
+		$scope.addSection = function(name)
+		{
+			if(name !== undefined && name.trim() !== '')
+			{
+				$http
+				.post(admin_url+"&ajax-action=addOptGroup", {
+					id_product: id_product, 
+					name: name
+				})
+				.then(function(resp){
+					if(resp.data.success)
+					{
+						$scope.updateComponents();
+					}
+					else
+					{
+						console.log(resp.data.message);
+					}
+				});
+			}
+		};
+
+		$scope.removeSection = function(name)
+		{
+			if(name !== undefined && name.trim() !== '')
+			{
+				$http
+				.post(admin_url+"&ajax-action=removeOptGroup", {
+					id_product: id_product, 
+					name: name
+				})
+				.then(function(resp){
+					if(resp.data.success)
+					{
+						$scope.updateComponents();
+					}
+					else
+					{
+						console.log(resp.data.message);
+					}
+				});
+			}
+		};
+
+		$scope.changeOptType = function(id_optgroup, type)
+		{
+			$http
+			.post(admin_url+"&ajax-action=changeOptType", {
+				id_optgroup: id_optgroup,
+				opttype: type
+			});
+		};
+
+		$scope.updateComponents();
+	}
 </script>
 
-<style>
-	{$custompacks_css}
-</style>
-
-<div id="not_a_custom_pack">
-	{l s='This product is not a custom pack, change the product type in the "Information" tab to access this tab.' mod='custompacks'}
-</div>
-
-<div id="custom_pack_configuration">
-	<div>
-		{l s='Configure you custom pack' mod='custompacks'}
+{literal}
+	<div ng-app ng-controller='CustomPacks'>
+		<div class="option-group" ng-repeat="(section, data) in components">
+			<h3>
+				<select ng-change='changeOptType(data.id_optgroup, data.opttype)' ng-model='data.opttype' ng-options="k as v for (k,v) in opttypes"></select>
+				<span class="name">{{section}}</span>
+				<span class="remove" ng-click="removeSection(section)">X</span>
+			</h3>
+			<div class="product" ng-repeat="(id, product) in data.products">
+				{{product.name}} <span ng-click="removeProduct(id, section)" class="remove">X</span>
+			</div>
+			<div class="search-box">
+				<label>Add products...</label><input type="text" ng-model="queries[section]" ng-change="searchProducts(queries[section], section)"></input>
+				<div class="product" ng-repeat="product in results[section]">
+					<a ng-click="addProduct(product.id_product, section)">{{product.name}}</a>
+				</div>
+			</div>
+		</div>
+		<div id="new-section">
+			<h3>Add a new section</h3>
+			<label for="new-section-name">Name</label>
+			<input id="new-section-name" ng-model="new_section_name" type="text"></input>
+			<a ng-click="addSection(new_section_name)">Add</a>
+		</div>
 	</div>
-	<button id="new_optgroup_button" onclick="showOptGroupForm()">{l s='Add a group of options' mod='custompacks'}</button>
-	<div id="new_optgroup_form" style="display:none">
-		<label for="new_optgroup_name">{l s='Name' mod='custompacks'}</label>
-		<input id="new_optgroup_name" type="text"></input>
-		<button onclick='javascript:addOptGroup()'>{l s='Add' mod='custompacks'}</button>
-		<div id="new_optgroup_error" class="light-error"></div>
-	</div>
-	<div id="components">
-		
-	</div>
-</div>
+{/literal}

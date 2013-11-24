@@ -71,6 +71,22 @@ class CustomProduct
 			return "This product is not a custom pack.";
 	}
 
+	public static function removeOptGroup($id_product, $name)
+	{
+		$cp = CustomProduct::findActiveByIdProduct($id_product);
+		if ($cp)
+		{
+			$oid = (int)Db::getInstance()->getValue(
+				'SELECT id FROM '._DB_PREFIX_.'fmdj_custompacks_optgroup WHERE id_pack='.(int)$cp['id'].' AND optgroup=\''.pSQL($name).'\''
+			);
+			return 
+				Db::getInstance()->execute('DELETE FROM '._DB_PREFIX_.'fmdj_custompacks_component WHERE id_optgroup='.(int)$oid)
+				&&
+				Db::getInstance()->execute('DELETE FROM '._DB_PREFIX_.'fmdj_custompacks_optgroup WHERE id='.(int)$oid);
+		}
+		else return true;
+	}
+
 	public static function getOptGroupId($id_product, $optgroup)
 	{
 		return (int)Db::getInstance()->getValue(
@@ -80,12 +96,13 @@ class CustomProduct
 		);
 	}
 
-	public static function getComponents($id_product, $id_lang)
+	public static function getComponents($id_product, $id_lang, $id_customization=0)
 	{
-		$sql = 'SELECT o.*, c.id_product as component_id_product, pl.name as product_name FROM '._DB_PREFIX_.'fmdj_custompacks_product p '
+		$sql = 'SELECT o.*, c.id_optgroup, c.id_product as component_id_product, pl.name as product_name FROM '._DB_PREFIX_.'fmdj_custompacks_product p '
 			 . 'INNER JOIN '._DB_PREFIX_.'fmdj_custompacks_optgroup o ON o.id_pack=p.id '
 			 . 'LEFT JOIN '._DB_PREFIX_.'fmdj_custompacks_component c ON c.id_optgroup=o.id '
 			 . 'LEFT JOIN '._DB_PREFIX_.'product_lang pl ON pl.id_product=c.id_product AND pl.id_lang='.(int)$id_lang.' '
+			 . 'WHERE p.id_product='.(int)$id_product.' '
 			 . 'ORDER BY o.position, c.id';
 
 		$rows = Db::getInstance()->ExecuteS($sql);
@@ -98,6 +115,7 @@ class CustomProduct
 			{
 				$obj[$row['optgroup']] = array(
 					'optgroup' => $row['optgroup'],
+					'id_optgroup' => $row['id_optgroup'],
 					'opttype' => $row['opttype'],
 					'products' => array()
 				);
@@ -146,4 +164,18 @@ class CustomProduct
 		else
 			return "Could not find option group.";
 	}
+
+	public static function getNewCustomizationId()
+	{
+		Db::getInstance()->execute('INSERT INTO '._DB_PREFIX_.'fmdj_custompacks_customization VALUES ()');
+		return Db::getInstance()->Insert_ID();
+	}
+
+	public static function changeOptType($id_optgroup, $opttype)
+	{
+		return Db::getInstance()->execute(
+			'UPDATE '._DB_PREFIX_.'fmdj_custompacks_optgroup SET opttype=\''.pSQL($opttype).'\' WHERE id='.(int)$id_optgroup
+		);
+	}
+
 }

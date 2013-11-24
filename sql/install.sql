@@ -19,6 +19,19 @@ CREATE TABLE IF NOT EXISTS PREFIX_fmdj_custompacks_component (
 	id INT NOT NULL PRIMARY KEY AUTO_INCREMENT,
 	id_optgroup INT NOT NULL,
 	id_product INT NOT NULL,
-	KEY (id_optgroup, id_product),
 	UNIQUE KEY (id_optgroup, id_product)
 );
+
+CREATE TABLE IF NOT EXISTS PREFIX_fmdj_custompacks_customization (
+	id INT NOT NULL PRIMARY KEY AUTO_INCREMENT
+);
+
+CREATE TABLE IF NOT EXISTS PREFIX_fmdj_custompacks_customization_component (
+	id_customization INT NOT NULL,
+	id_optgroup INT NOT NULL,
+	id_product INT NOT NULL,
+	KEY (id_customization),
+	KEY (id_optgroup, id_product)
+);
+
+

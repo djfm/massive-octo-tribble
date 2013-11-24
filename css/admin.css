@@ -1,3 +1,4 @@
+/*
 .light-error
 {
 	color: orange;
@@ -34,4 +35,64 @@ span.product-result, div.group-product span
 	border: 1px solid #ccc;
 	width: 600px;
 	display:inline-block;
+}*/
+
+div.option-group h3
+{
+	background-color: white!important;
+	padding: 5px;
+	margin-top: 10px;
+	display: block;
+	border-bottom: 3px solid #CCC;
+}
+
+div#new-section h3
+{
+	background-color: beige!important;
+	padding: 5px;
+	margin-top: 10px;
+	display: block;
+	border-bottom: 3px solid #CCC;
+}
+
+span.remove
+{
+	color:black;
+	display: inline-block;
+	padding: 0px 5px;
+	border-radius: 5px;
+	background-color: orange;
+	font-weight: bold;
+	border: 1px solid black;
+	cursor: pointer;
+}
+
+h3 span.remove
+{
+	float:right;
+}
+
+div.product:not(:first-child)
+{
+	margin-top: 5px;
+}
+
+div.search-box
+{
+	margin-top: 10px;
+}
+
+div.search-box label
+{
+	width: auto;
+}
+
+div.product a, div#new-section a
+{
+	cursor: pointer;
+}
+
+div#new-section label
+{
+	width: auto;
 }

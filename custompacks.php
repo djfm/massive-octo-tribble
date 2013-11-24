@@ -79,6 +79,11 @@ class CustomPacks extends Module
 			$method = "ajax".ucfirst($action);
 			if(method_exists($this, $method))
 			{
+				$args = @json_decode(file_get_contents('php://input'), true);
+				if ($args)
+					foreach ($args as $key => $value)
+						$_POST[$key] = $value;
+				header('Content-type: application/json');
 				die(json_encode($this->$method()));
 			}
 		}
@@ -104,8 +109,25 @@ class CustomPacks extends Module
 	{
 		if(CustomProduct::findActiveByIdProduct($params['product']->id))
 		{
+			$cookie = $this->context->cookie;
+
+			$key = "custompacks_products_{$params['product']->id}";
+
+			$id_customization = (int)$cookie->$key;
+
+			if($id_customization === 0)
+			{
+				$id_customization = CustomProduct::getNewCustomizationId();
+			}
+
+			$cookie->$key = $id_customization;
+
+			$components = CustomProduct::getComponents($params['product']->id, $this->context->language->id, $id_customization);
+			ddd($components);
 			global $smarty;
-			$smarty->assign('components', CustomProduct::getComponents($params['product']->id, $this->context->language->id));
+			$smarty->assign('id_product', $params['product']->id);
+			$smarty->assign('customize_url', $this->context->link->getModuleLink($this->name, 'customize'));
+			$smarty->assign('components', $components);
 
 			return $this->display(__FILE__, 'views/front/product.tpl');
 		}
@@ -134,6 +156,13 @@ class CustomPacks extends Module
 	private function ajaxAddOptGroup()
 	{
 		$ok = CustomProduct::addOptGroup(Tools::getValue('id_product'), Tools::getValue('name'));
+
+		return array('success' => ($ok === true), 'message' => ($ok === true ? '' : $this->l($ok)));
+	}
+
+	private function ajaxRemoveOptGroup()
+	{
+		$ok = CustomProduct::removeOptGroup(Tools::getValue('id_product'), Tools::getValue('name'));
 
 		return array('success' => ($ok === true), 'message' => ($ok === true ? '' : $this->l($ok)));
 	}
@@ -176,5 +205,10 @@ class CustomPacks extends Module
 	private function ajaxRemoveProduct()
 	{
 		return CustomProduct::removeProduct(Tools::getValue('id_product'), Tools::getValue('optgroup'), Tools::getValue('id_product_to_remove'));
+	}
+
+	private function ajaxChangeOptType()
+	{
+		return CustomProduct::changeOptType(Tools::getValue('id_optgroup'), Tools::getValue('opttype'));
 	}
 }
